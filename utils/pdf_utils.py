@@ -53,5 +53,6 @@ def extract_text_from_pdf(pdf_path):
 
     except Exception as e:
         print("PDF extraction error:", e)
+        print("EXTRACTED TEXT:", text[:1000])
 
     return text
