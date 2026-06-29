@@ -1,37 +1,41 @@
-import fitz
+import fitz  # PyMuPDF
 import pytesseract
 from PIL import Image
 import io
 import os
 
-# Set Windows path only when running on Windows
+# Windows Tesseract path
 if os.name == "nt":
-    pytesseract.pytesseract.tesseract_cmd = (
-        r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-    )
+    pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 
 def extract_text_from_pdf(pdf_path):
     text = ""
 
-    document = fitz.open(pdf_path)
+    try:
+        document = fitz.open(pdf_path)
 
-    for page in document:
-        page_text = page.get_text()
+        for page in document:
+            # 1. Try normal text extraction first
+            page_text = page.get_text("text")
 
-        # PDF already contains selectable text
-        if page_text.strip():
-            text += page_text
+            if page_text and page_text.strip():
+                text += page_text + "\n"
 
-        # Scanned PDF → OCR
-        else:
-            try:
-                pix = page.get_pixmap()
-                image = Image.open(io.BytesIO(pix.tobytes("png")))
-                text += pytesseract.image_to_string(image)
-            except Exception:
-                pass
+            else:
+                # 2. OCR fallback for scanned PDFs
+                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # better quality image
+                img_data = pix.tobytes("png")
 
-    document.close()
+                image = Image.open(io.BytesIO(img_data))
+
+                ocr_text = pytesseract.image_to_string(image)
+
+                text += ocr_text + "\n"
+
+        document.close()
+
+    except Exception as e:
+        print("PDF extraction error:", e)
 
     return text
