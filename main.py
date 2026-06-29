@@ -23,23 +23,20 @@ from services.ats_checker import calculate_ats_score
 
 app = FastAPI()
 
-
 # ==============================
-# ✅ CORS FIX (PRODUCTION READY)
+# ✅ FIXED CORS (PRODUCTION SAFE)
 # ==============================
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "https://prep-ai-frontend-nine.vercel.app",
-        "*"   # TEMP FIX (removes all CORS issues during testing)
+        "https://prep-ai-frontend-nine.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
