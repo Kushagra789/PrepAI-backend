@@ -24,13 +24,16 @@ from services.ats_checker import calculate_ats_score
 app = FastAPI()
 
 
-# ✅ FIXED CORS (PRODUCTION READY)
+# ==============================
+# ✅ CORS FIX (PRODUCTION READY)
+# ==============================
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "https://prep-ai-frontend-nine.vercel.app"
+        "https://prep-ai-frontend-nine.vercel.app",
+        "*"   # TEMP FIX (removes all CORS issues during testing)
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -44,9 +47,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @app.get("/")
 def home():
-    return {
-        "message": "PrepAI is running 🚀"
-    }
+    return {"message": "PrepAI is running 🚀"}
 
 
 @app.post("/upload-resume/")
