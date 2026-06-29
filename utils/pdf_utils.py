@@ -16,22 +16,38 @@ def extract_text_from_pdf(pdf_path):
         document = fitz.open(pdf_path)
 
         for page in document:
-            # 1. Try normal text extraction first
+
+            # -----------------------------
+            # 1. NORMAL PDF TEXT EXTRACTION
+            # -----------------------------
             page_text = page.get_text("text")
 
             if page_text and page_text.strip():
                 text += page_text + "\n"
 
+            # -----------------------------
+            # 2. OCR FOR SCANNED PDF
+            # -----------------------------
             else:
-                # 2. OCR fallback for scanned PDFs
-                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # better quality image
-                img_data = pix.tobytes("png")
+                try:
+                    # HIGH RESOLUTION (IMPORTANT FOR ACCURACY)
+                    pix = page.get_pixmap(matrix=fitz.Matrix(3, 3))
 
-                image = Image.open(io.BytesIO(img_data))
+                    img_data = pix.tobytes("png")
+                    image = Image.open(io.BytesIO(img_data))
 
-                ocr_text = pytesseract.image_to_string(image)
+                    # OCR CONFIG (improves detection)
+                    custom_config = r'--oem 3 --psm 6'
 
-                text += ocr_text + "\n"
+                    ocr_text = pytesseract.image_to_string(
+                        image,
+                        config=custom_config
+                    )
+
+                    text += ocr_text + "\n"
+
+                except Exception as ocr_error:
+                    print("OCR error:", ocr_error)
 
         document.close()
 
