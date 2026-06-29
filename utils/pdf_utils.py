@@ -1,12 +1,10 @@
 import fitz
-import pytesseract
+import easyocr
 from PIL import Image
 import io
-import os
 
-# Windows only
-if os.name == "nt":
-    pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+# Load EasyOCR once
+reader = easyocr.Reader(['en'], gpu=False)
 
 
 def extract_text_from_pdf(pdf_path):
@@ -16,48 +14,37 @@ def extract_text_from_pdf(pdf_path):
 
     for page in doc:
 
+        # First try normal PDF text extraction
+        page_text = page.get_text("text")
+
+        if page_text.strip():
+            text += page_text + "\n"
+            continue
+
+        # OCR for scanned pages
         try:
-            # STEP 1: Normal text extraction
-            page_text = page.get_text("text")
-
-            if page_text and page_text.strip():
-                text += page_text + "\n"
-                continue
-
-            # STEP 2: OCR fallback (SAFE)
-            pix = page.get_pixmap(dpi=200)
+            pix = page.get_pixmap(dpi=300)
 
             img_bytes = pix.tobytes("png")
+
             image = Image.open(io.BytesIO(img_bytes))
 
-            image = image.convert("L")
+            results = reader.readtext(image)
 
-            custom_config = r'--oem 3 --psm 6'
+            for result in results:
+                text += result[1] + " "
 
-            try:
-                ocr_text = pytesseract.image_to_string(
-                    image,
-                    config=custom_config
-                )
-                text += ocr_text + "\n"
-
-            except Exception as e:
-                print("OCR Error:", e)
-                text += ""
+            text += "\n"
 
         except Exception as e:
-            print("Page Extraction Error:", e)
-            continue
+            print("EasyOCR Error:", e)
 
     doc.close()
 
-    # ==========================
-    # DEBUG OUTPUT
-    # ==========================
-    print("=" * 50)
+    print("=" * 60)
     print("TEXT LENGTH:", len(text))
     print("TEXT SAMPLE:")
-    print(text[:500])
-    print("=" * 50)
+    print(text[:1000])
+    print("=" * 60)
 
     return text
