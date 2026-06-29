@@ -1,10 +1,14 @@
 import fitz
-import easyocr
+import pytesseract
 from PIL import Image
 import io
+import os
 
-# Load EasyOCR once
-reader = easyocr.Reader(['en'], gpu=False)
+# Windows only
+if os.name == "nt":
+    pytesseract.pytesseract.tesseract_cmd = (
+        r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+    )
 
 
 def extract_text_from_pdf(pdf_path):
@@ -14,30 +18,27 @@ def extract_text_from_pdf(pdf_path):
 
     for page in doc:
 
-        # First try normal PDF text extraction
+        # Try normal PDF text first
         page_text = page.get_text("text")
 
         if page_text.strip():
             text += page_text + "\n"
-            continue
 
-        # OCR for scanned pages
-        try:
-            pix = page.get_pixmap(dpi=300)
+        else:
+            # Skip OCR on Render/Linux because Tesseract isn't installed
+            if os.name == "nt":
+                try:
+                    pix = page.get_pixmap(dpi=300)
 
-            img_bytes = pix.tobytes("png")
+                    img = Image.open(io.BytesIO(pix.tobytes("png")))
+                    img = img.convert("L")
 
-            image = Image.open(io.BytesIO(img_bytes))
+                    ocr = pytesseract.image_to_string(img)
 
-            results = reader.readtext(image)
+                    text += ocr + "\n"
 
-            for result in results:
-                text += result[1] + " "
-
-            text += "\n"
-
-        except Exception as e:
-            print("EasyOCR Error:", e)
+                except Exception as e:
+                    print("OCR Error:", e)
 
     doc.close()
 
