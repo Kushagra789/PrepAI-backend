@@ -24,15 +24,13 @@ from services.ats_checker import calculate_ats_score
 app = FastAPI()
 
 # ==============================
-# ✅ FIXED CORS (FOR VERCEL + RENDER)
+# 🚀 FINAL CORS FIX (PRODUCTION SAFE)
 # ==============================
-origins = [
-    "https://prep-ai-frontend-nine.vercel.app",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=[
+        "https://prep-ai-frontend-nine.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
