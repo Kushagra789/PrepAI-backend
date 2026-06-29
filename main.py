@@ -42,6 +42,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @app.get("/")
 def home():
+    print("🚀 RENDER FORCE DEPLOY ACTIVE")  # 🔥 tiny change added
     return {"message": "PrepAI is running 🚀"}
 
 
