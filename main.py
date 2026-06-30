@@ -1,10 +1,6 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-import os
-import shutil
-
-from utils.pdf_utils import extract_text_from_pdf
+from pydantic import BaseModel
 
 from services.resume_analyzer import (
     extract_skills,
@@ -15,16 +11,13 @@ from services.resume_analyzer import (
     extract_contact_info
 )
 
-from services.job_matcher import match_resume_with_job
-from services.suggestion_engine import generate_suggestions
 from services.ai_feedback import generate_resume_feedback
 from services.ats_checker import calculate_ats_score
-
 
 app = FastAPI()
 
 # ==============================
-# 🚀 FINAL CORS FIX (PRODUCTION SAFE)
+# 🚀 FINAL CORS FIX
 # ==============================
 app.add_middleware(
     CORSMiddleware,
@@ -36,25 +29,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+class ResumeText(BaseModel):
+    text: str
 
 
 @app.get("/")
 def home():
-    print("🚀 RENDER FORCE DEPLOY ACTIVE")  # 🔥 tiny change added
+    print("🚀 RENDER FORCE DEPLOY ACTIVE")
     return {"message": "PrepAI is running 🚀"}
 
 
 @app.post("/upload-resume/")
-async def upload_resume(file: UploadFile = File(...)):
+async def upload_resume(data: ResumeText):
 
-    file_path = os.path.join(UPLOAD_DIR, file.filename)
-
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    extracted_text = extract_text_from_pdf(file_path)
+    extracted_text = data.text
 
     candidate_name = extract_name(extracted_text)
     contact_info = extract_contact_info(extracted_text)
@@ -87,7 +76,7 @@ async def upload_resume(file: UploadFile = File(...)):
         "message": "Resume analyzed successfully",
         "candidate_name": candidate_name,
         "contact_info": contact_info,
-        "filename": file.filename,
+        "filename": "Uploaded Resume",
         "skills": skills,
         "education": education,
         "projects": projects,
