@@ -17,12 +17,13 @@ from services.ats_checker import calculate_ats_score
 app = FastAPI()
 
 # ==============================
-# 🚀 FINAL CORS FIX
+# CORS
 # ==============================
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://prep-ai-frontend-nine.vercel.app"
+        "http://localhost:5173",
+        "https://prep-ai-frontend-nine.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -36,8 +37,7 @@ class ResumeText(BaseModel):
 
 @app.get("/")
 def home():
-    print("🚀 RENDER FORCE DEPLOY ACTIVE")
-    return {"message": "PrepAI is running 🚀"}
+    return {"message": "PrepAI Backend is running 🚀"}
 
 
 @app.post("/upload-resume/")
