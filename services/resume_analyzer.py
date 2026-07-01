@@ -132,31 +132,36 @@ def calculate_resume_score(text, skills, education, projects):
 
 
 def extract_name(text):
-    lines = text.split("\n")
+    # Remove common OCR/PDF artifacts
+    text = (
+        text.replace("©", " ")
+            .replace("«", " ")
+            .replace("»", " ")
+            .replace("Cy", " ")
+            .replace("ae", " ")
+    )
 
-    ignored_words = [
-        "student",
-        "resume",
-        "curriculum vitae",
-        "education",
-        "skills",
-        "projects",
-        "experience"
-    ]
+    # Find 2–3 consecutive capitalized words
+    pattern = r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2})\b"
 
-    for line in lines:
-        clean_line = line.strip()
+    matches = re.findall(pattern, text)
 
-        if len(clean_line) == 0:
-            continue
+    ignored = {
+        "Work Experience",
+        "Technical Skills",
+        "System Design",
+        "Graphic Era",
+        "Computer Science",
+        "Material Design",
+        "Data Management",
+        "Backend Java",
+        "Resume Intelligence",
+        "Candidate Profile"
+    }
 
-        if clean_line.lower() in ignored_words:
-            continue
-
-        words = clean_line.split()
-
-        if 1 < len(words) <= 4:
-            return clean_line
+    for match in matches:
+        if match not in ignored:
+            return match.strip()
 
     return "Name not detected"
 
@@ -177,7 +182,6 @@ def extract_contact_info(text):
     if email_match:
         contact_info["email"] = email_match.group()
 
-
     # Phone extraction
     phone_pattern = r"\b\d{10}\b"
 
@@ -186,15 +190,12 @@ def extract_contact_info(text):
     if phone_match:
         contact_info["phone"] = phone_match.group()
 
-
     # LinkedIn detection
     if "linkedin" in text.lower():
         contact_info["linkedin"] = "LinkedIn profile detected"
 
-
     # GitHub detection
     if "github" in text.lower():
         contact_info["github"] = "GitHub profile detected"
-
 
     return contact_info
