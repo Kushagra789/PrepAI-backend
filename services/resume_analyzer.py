@@ -1,10 +1,14 @@
 import re
 
 
+# ==========================
+# SKILLS EXTRACTION
+# ==========================
 def extract_skills(text):
     skills_list = [
         "Python",
         "Java",
+        "C",
         "C++",
         "JavaScript",
         "React",
@@ -18,20 +22,30 @@ def extract_skills(text):
         "GitHub",
         "Git",
         "Redis",
-        "Socket.IO"
+        "Socket.IO",
+        "HTML",
+        "CSS",
+        "Node.js",
+        "MongoDB"
     ]
 
     found_skills = []
 
+    lower_text = text.lower()
+
     for skill in skills_list:
-        if skill.lower() in text.lower():
+        if skill.lower() in lower_text:
             found_skills.append(skill)
 
-    return found_skills
+    return sorted(list(set(found_skills)))
 
 
+# ==========================
+# EDUCATION EXTRACTION
+# ==========================
 def extract_education(text):
-    education_keywords = [
+
+    keywords = [
         "B.Tech",
         "B.E",
         "Bachelor",
@@ -44,86 +58,76 @@ def extract_education(text):
         "College"
     ]
 
-    found_education = []
+    found = []
 
-    for keyword in education_keywords:
-        if keyword.lower() in text.lower():
-            found_education.append(keyword)
+    lower_text = text.lower()
 
-    return found_education
+    for keyword in keywords:
+        if keyword.lower() in lower_text:
+            found.append(keyword)
+
+    return sorted(list(set(found)))
 
 
+# ==========================
+# PROJECT EXTRACTION
+# ==========================
 def extract_projects(text):
-    ignored_words = [
-        "projects",
-        "project",
-        "system design",
-        "backend",
-        "web technologies"
+
+    patterns = [
+        r"([A-Z][A-Za-z ]+ App)",
+        r"([A-Z][A-Za-z ]+ Application)",
+        r"([A-Z][A-Za-z ]+ Tracker)",
+        r"([A-Z][A-Za-z ]+ Chat)",
     ]
 
-    found_projects = []
+    projects = []
 
-    lines = text.split("\n")
+    for pattern in patterns:
+        matches = re.findall(pattern, text)
 
-    for line in lines:
-        clean_line = line.strip()
+        for match in matches:
+            match = match.strip()
 
-        if len(clean_line) < 3:
-            continue
+            if len(match) > 3:
+                projects.append(match)
 
-        if clean_line.lower() in ignored_words:
-            continue
-
-        if (
-            "app" in clean_line.lower()
-            or "application" in clean_line.lower()
-            or "chat" in clean_line.lower()
-            or "tracker" in clean_line.lower()
-            or "smart" in clean_line.lower()
-        ):
-            found_projects.append(clean_line)
-
-    return found_projects
+    return sorted(list(set(projects)))
 
 
+# ==========================
+# RESUME SCORE
+# ==========================
 def calculate_resume_score(text, skills, education, projects):
+
     score = 0
+
     feedback = []
 
-    if len(skills) >= 3:
+    if len(skills) >= 5:
         score += 25
     else:
-        feedback.append("Add more technical skills")
+        feedback.append("Add more technical skills.")
 
-    if len(education) > 0:
-        score += 25
+    if education:
+        score += 20
     else:
-        feedback.append("Add education details")
+        feedback.append("Education section is missing.")
 
     if len(projects) >= 2:
-        score += 25
+        score += 20
     else:
-        feedback.append("Add more projects")
+        feedback.append("Add at least two projects.")
 
-    experience_keywords = [
-        "experience",
-        "internship",
-        "work",
-        "job"
-    ]
-
-    has_experience = False
-
-    for keyword in experience_keywords:
-        if keyword.lower() in text.lower():
-            has_experience = True
-            break
-
-    if has_experience:
-        score += 25
+    if re.search(r"(experience|internship|work)", text, re.IGNORECASE):
+        score += 20
     else:
-        feedback.append("Add internships or work experience")
+        feedback.append("Add internship or work experience.")
+
+    if re.search(r"(github|linkedin)", text, re.IGNORECASE):
+        score += 15
+    else:
+        feedback.append("Add GitHub and LinkedIn links.")
 
     return {
         "resume_score": score,
@@ -131,42 +135,67 @@ def calculate_resume_score(text, skills, education, projects):
     }
 
 
+# ==========================
+# NAME EXTRACTION
+# ==========================
 def extract_name(text):
-    # Remove common OCR/PDF artifacts
+
     text = (
         text.replace("©", " ")
-            .replace("«", " ")
-            .replace("»", " ")
-            .replace("Cy", " ")
-            .replace("ae", " ")
+        .replace("«", " ")
+        .replace("»", " ")
+        .replace("Cy", " ")
+        .replace("ae", " ")
     )
 
-    # Find 2–3 consecutive capitalized words
-    pattern = r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2})\b"
+    text = re.sub(r"\s+", " ", text)
 
-    matches = re.findall(pattern, text)
-
-    ignored = {
-        "Work Experience",
-        "Technical Skills",
-        "System Design",
-        "Graphic Era",
-        "Computer Science",
-        "Material Design",
-        "Data Management",
-        "Backend Java",
-        "Resume Intelligence",
-        "Candidate Profile"
+    stop_words = {
+        "Student",
+        "Developer",
+        "Engineer",
+        "Intern",
+        "Education",
+        "Projects",
+        "Experience",
+        "Technical",
+        "Skills",
+        "Languages",
+        "Backend",
+        "Frontend",
+        "University",
+        "College"
     }
 
-    for match in matches:
-        if match not in ignored:
-            return match.strip()
+    words = text.split()
+
+    for i in range(len(words)):
+
+        candidate = []
+
+        for j in range(i, min(i + 3, len(words))):
+
+            word = words[j]
+
+            if word in stop_words:
+                break
+
+            if re.fullmatch(r"[A-Z][a-z]+", word):
+                candidate.append(word)
+            else:
+                break
+
+        if len(candidate) >= 2:
+            return " ".join(candidate)
 
     return "Name not detected"
 
 
+# ==========================
+# CONTACT EXTRACTION
+# ==========================
 def extract_contact_info(text):
+
     contact_info = {
         "email": None,
         "phone": None,
@@ -174,28 +203,42 @@ def extract_contact_info(text):
         "github": None
     }
 
-    # Email extraction
-    email_pattern = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+    email = re.search(
+        r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}",
+        text
+    )
 
-    email_match = re.search(email_pattern, text)
+    if email:
+        contact_info["email"] = email.group()
 
-    if email_match:
-        contact_info["email"] = email_match.group()
+    phone = re.search(
+        r"(?:\+91[- ]?)?[6-9]\d{9}",
+        text
+    )
 
-    # Phone extraction
-    phone_pattern = r"\b\d{10}\b"
+    if phone:
+        contact_info["phone"] = phone.group()
 
-    phone_match = re.search(phone_pattern, text)
+    linkedin = re.search(
+        r"(https?://)?(www\.)?linkedin\.com/[^\s]+",
+        text,
+        re.IGNORECASE
+    )
 
-    if phone_match:
-        contact_info["phone"] = phone_match.group()
+    if linkedin:
+        contact_info["linkedin"] = linkedin.group()
+    elif "linkedin" in text.lower():
+        contact_info["linkedin"] = "Detected"
 
-    # LinkedIn detection
-    if "linkedin" in text.lower():
-        contact_info["linkedin"] = "LinkedIn profile detected"
+    github = re.search(
+        r"(https?://)?(www\.)?github\.com/[^\s]+",
+        text,
+        re.IGNORECASE
+    )
 
-    # GitHub detection
-    if "github" in text.lower():
-        contact_info["github"] = "GitHub profile detected"
+    if github:
+        contact_info["github"] = github.group()
+    elif "github" in text.lower():
+        contact_info["github"] = "Detected"
 
     return contact_info
